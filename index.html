@@ -97,8 +97,9 @@ async function saveProfile() {
         });
 
     if (error) {
-        console.error('Profile error:', error);
-        return;
+    alert('Ошибка Supabase: ' + error.message);
+    console.error('Profile error:', error);
+    return;
     }
 
     console.log('Профиль Vibing сохранён ✅');
