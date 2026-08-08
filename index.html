@@ -2,7 +2,6 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
@@ -76,7 +75,7 @@
     tg.ready();
     tg.expand();
 
-    // Карта — Ташкент
+    // Создаём карту
     const map = L.map('map').setView([41.2995, 69.2401], 12);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -85,43 +84,56 @@
     }).addTo(map);
 
     let userMarker = null;
+    let locationVisible = false;
 
-    document.getElementById('locationBtn').addEventListener('click', function () {
+    const locationBtn = document.getElementById('locationBtn');
 
+    locationBtn.addEventListener('click', function () {
+
+        // Если точка уже показана — скрываем её
+        if (locationVisible) {
+
+            if (userMarker) {
+                map.removeLayer(userMarker);
+                userMarker = null;
+            }
+
+            locationVisible = false;
+            locationBtn.textContent = '📍 Показать меня';
+
+            return;
+        }
+
+        // Проверяем поддержку геолокации
         if (!navigator.geolocation) {
             alert('Ваш браузер не поддерживает геолокацию');
             return;
         }
 
-        this.textContent = '📍 Определяем местоположение...';
+        locationBtn.textContent = '📍 Определяем...';
 
         navigator.geolocation.getCurrentPosition(
+
             function(position) {
 
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
 
-                // Если маркер уже существует — перемещаем его
-                if (userMarker) {
-                    userMarker.setLatLng([lat, lon]);
-                } else {
-                    userMarker = L.marker([lat, lon])
-                        .addTo(map)
-                        .bindPopup('📍 Вы здесь')
-                        .openPopup();
-                }
+                userMarker = L.marker([lat, lon])
+                    .addTo(map)
+                    .bindPopup('📍 Вы здесь')
+                    .openPopup();
 
-                // Перемещаем карту к пользователю
                 map.setView([lat, lon], 16);
 
-                document.getElementById('locationBtn').textContent =
-                    '📍 Моё местоположение';
+                locationVisible = true;
+
+                locationBtn.textContent = '👻 Скрыть меня';
             },
 
             function(error) {
 
-                document.getElementById('locationBtn').textContent =
-                    '📍 Моё местоположение';
+                locationBtn.textContent = '📍 Показать меня';
 
                 alert(
                     'Не удалось получить местоположение. ' +
