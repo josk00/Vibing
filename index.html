@@ -79,21 +79,32 @@ const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
-async function testSupabase() {
-    const { error } = await supabaseClient
-        .from('profiles')
-        .select('id')
-        .limit(1);
+async function saveProfile() {
+    const user = tg.initDataUnsafe?.user;
 
-    if (error) {
-        console.error('Supabase error:', error);
+    if (!user) {
+        console.log('Telegram user не найден');
         return;
     }
 
-    console.log('Supabase подключён ✅');
+    const { error } = await supabaseClient
+        .from('profiles')
+        .upsert({
+            telegram_id: String(user.id),
+            username: user.username || null
+        }, {
+            onConflict: 'telegram_id'
+        });
+
+    if (error) {
+        console.error('Profile error:', error);
+        return;
+    }
+
+    console.log('Профиль Vibing сохранён ✅');
 }
 
-testSupabase();
+saveProfile();
     tg.ready();
     tg.expand();
 
