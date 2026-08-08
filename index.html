@@ -72,6 +72,13 @@
 
 <script>
     const tg = window.Telegram.WebApp;
+    const SUPABASE_URL = 'https://ddvdeujtfrjchdadswmc.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ivn7KvJJSH_ncqzDfhQ1Ug_5GVmUquX';
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+);
 
     tg.ready();
     tg.expand();
