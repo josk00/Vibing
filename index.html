@@ -79,7 +79,21 @@ const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_KEY
 );
+async function testSupabase() {
+    const { error } = await supabaseClient
+        .from('profiles')
+        .select('id')
+        .limit(1);
 
+    if (error) {
+        console.error('Supabase error:', error);
+        return;
+    }
+
+    console.log('Supabase подключён ✅');
+}
+
+testSupabase();
     tg.ready();
     tg.expand();
 
