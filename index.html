@@ -2,15 +2,14 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <title>Vibing</title>
 
-    <!-- Telegram Mini App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Leaflet -->
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -33,6 +32,31 @@
             width: 100%;
             height: 100vh;
         }
+
+        #locationBtn {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+
+            border: none;
+            border-radius: 14px;
+
+            padding: 14px 22px;
+
+            font-size: 16px;
+            font-weight: 600;
+
+            background: #2481cc;
+            color: white;
+
+            box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+        }
+
+        #locationBtn:active {
+            transform: translateX(-50%) scale(0.96);
+        }
     </style>
 </head>
 
@@ -40,22 +64,78 @@
 
 <div id="map"></div>
 
+<button id="locationBtn">
+    📍 Моё местоположение
+</button>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // Telegram Mini App
     const tg = window.Telegram.WebApp;
+
     tg.ready();
     tg.expand();
 
-    // Начальная позиция карты — Ташкент
+    // Карта — Ташкент
     const map = L.map('map').setView([41.2995, 69.2401], 12);
 
-    // OpenStreetMap
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    let userMarker = null;
+
+    document.getElementById('locationBtn').addEventListener('click', function () {
+
+        if (!navigator.geolocation) {
+            alert('Ваш браузер не поддерживает геолокацию');
+            return;
+        }
+
+        this.textContent = '📍 Определяем местоположение...';
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                // Если маркер уже существует — перемещаем его
+                if (userMarker) {
+                    userMarker.setLatLng([lat, lon]);
+                } else {
+                    userMarker = L.marker([lat, lon])
+                        .addTo(map)
+                        .bindPopup('📍 Вы здесь')
+                        .openPopup();
+                }
+
+                // Перемещаем карту к пользователю
+                map.setView([lat, lon], 16);
+
+                document.getElementById('locationBtn').textContent =
+                    '📍 Моё местоположение';
+            },
+
+            function(error) {
+
+                document.getElementById('locationBtn').textContent =
+                    '📍 Моё местоположение';
+
+                alert(
+                    'Не удалось получить местоположение. ' +
+                    'Разрешите доступ к геолокации.'
+                );
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    });
 </script>
 
 </body>
