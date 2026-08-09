@@ -661,6 +661,39 @@ async function loadFriendsOnMap() {
 }
 
 loadFriendsOnMap();
+    const friendsLocationChannel = supabaseClient
+    .channel('friends-location-updates')
+    .on(
+        'postgres_changes',
+        {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles'
+        },
+        (payload) => {
+            const friend = payload.new;
+
+            if (
+                friend.latitude == null ||
+                friend.longitude == null
+            ) {
+                return;
+            }
+
+            const id = String(friend.telegram_id);
+
+            // Если это не отображаемый друг — ничего не делаем
+            if (!friendMarkers[id]) {
+                return;
+            }
+
+            friendMarkers[id].setLatLng([
+                friend.latitude,
+                friend.longitude
+            ]);
+        }
+    )
+    .subscribe();
     
 loadFriendRequests();
 </script>
