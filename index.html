@@ -163,6 +163,40 @@ async function saveProfile() {
 }
 
 saveProfile();
+    document.getElementById('searchBtn').addEventListener('click', async () => {
+    const input = document.getElementById('usernameInput');
+    const result = document.getElementById('searchResult');
+
+    const username = input.value.trim().replace('@', '');
+
+    if (!username) {
+        result.textContent = 'Введите username';
+        return;
+    }
+
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('telegram_id, username')
+        .eq('username', username)
+        .maybeSingle();
+
+    if (error) {
+        result.textContent = 'Ошибка поиска';
+        console.error(error);
+        return;
+    }
+
+    if (!data) {
+        result.textContent = 'Пользователь не найден 😕';
+        return;
+    }
+
+    result.innerHTML = `
+        👤 @${data.username}
+        <br>
+        <button id="addFriendBtn">➕ Добавить в друзья</button>
+    `;
+});
     tg.ready();
     tg.expand();
 
