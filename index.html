@@ -555,6 +555,50 @@ async function loadFriendRequests() {
 }
 
 loadFriendRequests();
+let locationWatcher = null;
+
+function startRealtimeLocation() {
+    if (!navigator.geolocation) {
+        alert('Геолокация не поддерживается');
+        return;
+    }
+
+    if (locationWatcher !== null) {
+        navigator.geolocation.clearWatch(locationWatcher);
+    }
+
+    locationWatcher = navigator.geolocation.watchPosition(
+        async (position) => {
+            const user = tg.initDataUnsafe?.user;
+
+            if (!user) return;
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({
+                    latitude: latitude,
+                    longitude: longitude,
+                    location_updated_at: new Date().toISOString()
+                })
+                .eq('telegram_id', String(user.id));
+
+            if (error) {
+                console.error('Location update error:', error);
+            }
+        },
+        (error) => {
+            console.error('GPS error:', error);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 5000,
+            timeout: 10000
+        }
+    );
+}
 </script>
 
 </body>
