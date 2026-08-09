@@ -399,6 +399,14 @@ saveProfile();
             }
         );
     });
+const friendsBtn = document.getElementById('friendsBtn');
+const friendsPanel = document.getElementById('friendsPanel');
+
+if (friendsBtn && friendsPanel) {
+    friendsBtn.addEventListener('click', function () {
+        friendsPanel.classList.toggle('open');
+    });
+}
 </script>
 
 </body>
