@@ -425,17 +425,21 @@ saveProfile();
 
         locationBtn.textContent = '📍 Определяем...';
 
-        navigator.geolocation.getCurrentPosition(
+        navigator.geolocation.watchPosition(
 
             function(position) {
 
                 const lat = position.coords.latitude;
                 const lon = position.coords.longitude;
 
-                userMarker = L.marker([lat, lon])
-                    .addTo(map)
-                    .bindPopup('📍 Вы здесь')
-                    .openPopup();
+                if (userMarker) {
+    userMarker.setLatLng([lat, lon]);
+} else {
+    userMarker = L.marker([lat, lon])
+        .addTo(map)
+        .bindPopup('📍 Вы здесь')
+        .openPopup();
+            }
 
                 map.setView([lat, lon], 16);
 
