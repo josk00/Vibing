@@ -197,6 +197,55 @@ saveProfile();
         <button id="addFriendBtn">➕ Добавить в друзья</button>
     `;
 });
+    document.addEventListener('click', async (event) => {
+    if (event.target.id !== 'addFriendBtn') {
+        return;
+    }
+
+    const currentUser = tg.initDataUnsafe?.user;
+
+    if (!currentUser) {
+        alert('Не удалось определить Telegram-пользователя');
+        return;
+    }
+
+    const username = document.getElementById('usernameInput')
+        .value
+        .trim()
+        .replace('@', '');
+
+    const { data: friend, error: findError } = await supabaseClient
+        .from('profiles')
+        .select('telegram_id, username')
+        .eq('username', username)
+        .maybeSingle();
+
+    if (findError || !friend) {
+        alert('Пользователь не найден');
+        return;
+    }
+
+    if (String(friend.telegram_id) === String(currentUser.id)) {
+        alert('Нельзя добавить самого себя 😄');
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from('friendships')
+        .insert({
+            user_id: String(currentUser.id),
+            friend_id: String(friend.telegram_id),
+            status: 'pending'
+        });
+
+    if (error) {
+        console.error(error);
+        alert('Не удалось отправить запрос: ' + error.message);
+        return;
+    }
+
+    alert('Запрос отправлен! 👥');
+});
     tg.ready();
     tg.expand();
 
