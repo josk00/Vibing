@@ -181,6 +181,48 @@ const friendsPanel = document.getElementById('friendsPanel');
 friendsBtn.addEventListener('click', () => {
     friendsPanel.classList.toggle('open');
 }); 
+        #friendRequests {
+    margin-top: 18px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+#friendRequests h3 {
+    margin: 0 0 10px;
+    font-size: 17px;
+}
+
+.requestItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+    padding: 10px 0;
+}
+
+.requestButtons {
+    display: flex;
+    gap: 6px;
+}
+
+.acceptBtn,
+.rejectBtn {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-weight: 600;
+}
+
+.acceptBtn {
+    background: #2481cc;
+    color: white;
+}
+
+.rejectBtn {
+    background: #eee;
+    color: #333;
+}
     </style>
 </head>
 
@@ -202,6 +244,9 @@ friendsBtn.addEventListener('click', () => {
     </button>
 
     <div id="searchResult"></div>
+        <div id="friendRequests">
+    <h3>📨 Входящие запросы</h3>
+    <div id="requestsList">Загрузка...</div>
 </div>
 
 <button id="locationBtn">
@@ -413,6 +458,92 @@ if (friendsBtn && friendsPanel) {
         friendsPanel.classList.toggle('open');
     });
 }
+async function loadFriendRequests() {
+    const requestsList = document.getElementById('requestsList');
+    const currentUser = tg.initDataUnsafe?.user;
+
+    if (!currentUser) {
+        requestsList.textContent = 'Не удалось определить пользователя';
+        return;
+    }
+
+    const { data: requests, error } = await supabaseClient
+        .from('friendships')
+        .select('user_id')
+        .eq('friend_id', String(currentUser.id))
+        .eq('status', 'pending');
+
+    if (error) {
+        console.error(error);
+        requestsList.textContent = 'Ошибка загрузки запросов';
+        return;
+    }
+
+    if (!requests || requests.length === 0) {
+        requestsList.textContent = 'Нет новых запросов';
+        return;
+    }
+
+    requestsList.innerHTML = '';
+
+    for (const request of requests) {
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('username')
+            .eq('telegram_id', request.user_id)
+            .maybeSingle();
+
+        const username = profile?.username || 'Пользователь';
+
+        const item = document.createElement('div');
+        item.className = 'requestItem';
+
+        item.innerHTML = `
+            <span>👤 @${username}</span>
+
+            <div class="requestButtons">
+                <button class="acceptBtn">✓</button>
+                <button class="rejectBtn">✕</button>
+            </div>
+        `;
+
+        item.querySelector('.acceptBtn').addEventListener('click', async () => {
+            const { error } = await supabaseClient
+                .from('friendships')
+                .update({ status: 'accepted' })
+                .eq('user_id', request.user_id)
+                .eq('friend_id', String(currentUser.id))
+                .eq('status', 'pending');
+
+            if (error) {
+                alert('Ошибка: ' + error.message);
+                return;
+            }
+
+            loadFriendRequests();
+        });
+
+        item.querySelector('.rejectBtn').addEventListener('click', async () => {
+            const { error } = await supabaseClient
+                .from('friendships')
+                .delete()
+                .eq('user_id', request.user_id)
+                .eq('friend_id', String(currentUser.id))
+                .eq('status', 'pending');
+
+            if (error) {
+                alert('Ошибка: ' + error.message);
+                return;
+            }
+
+            loadFriendRequests();
+        });
+
+        requestsList.appendChild(item);
+    }
+}
+
+loadFriendRequests();
 </script>
 
 </body>
