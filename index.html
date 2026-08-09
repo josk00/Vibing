@@ -599,7 +599,70 @@ function startRealtimeLocation() {
 
 startRealtimeLocation();
     
- loadFriendRequests();
+ let friendMarkers = {};
+
+async function loadFriendsOnMap() {
+    const user = tg.initDataUnsafe?.user;
+
+    if (!user) return;
+
+    // Получаем принятые дружеские связи
+    const { data: friendships, error } = await supabaseClient
+        .from('friendships')
+        .select('user_id, friend_id')
+        .eq('status', 'accepted')
+        .or(
+            `user_id.eq.${String(user.id)},friend_id.eq.${String(user.id)}`
+        );
+
+    if (error) {
+        console.error('Friends error:', error);
+        return;
+    }
+
+    if (!friendships) return;
+
+    const friendIds = friendships.map(friendship => {
+        return String(friendship.user_id) === String(user.id)
+            ? String(friendship.friend_id)
+            : String(friendship.user_id);
+    });
+
+    if (friendIds.length === 0) return;
+
+    // Получаем профили друзей вместе с координатами
+    const { data: friends, error: friendsError } = await supabaseClient
+        .from('profiles')
+        .select('telegram_id, username, latitude, longitude')
+        .in('telegram_id', friendIds);
+
+    if (friendsError) {
+        console.error('Profiles error:', friendsError);
+        return;
+    }
+
+    friends.forEach(friend => {
+        if (friend.latitude == null || friend.longitude == null) return;
+
+        const id = String(friend.telegram_id);
+        const position = [
+            friend.latitude,
+            friend.longitude
+        ];
+
+        if (friendMarkers[id]) {
+            friendMarkers[id].setLatLng(position);
+        } else {
+            friendMarkers[id] = L.marker(position)
+                .addTo(map)
+                .bindPopup(`👤 @${friend.username || 'Пользователь'}`);
+        }
+    });
+}
+
+loadFriendsOnMap();
+    
+loadFriendRequests();
 </script>
 
 </body>
