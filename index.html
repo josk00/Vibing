@@ -554,7 +554,48 @@ async function loadFriendRequests() {
     }
 }
 
-loadFriendRequests();
+// realtime GPS
+let locationWatcher = null;
+
+function startRealtimeLocation() {
+    if (!navigator.geolocation) {
+        console.log('Geolocation is not supported');
+        return;
+    }
+
+    locationWatcher = navigator.geolocation.watchPosition(
+        async (position) => {
+            const user = tg.initDataUnsafe?.user;
+
+            if (!user) return;
+
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    location_updated_at: new Date().toISOString()
+                })
+                .eq('telegram_id', String(user.id));
+
+            if (error) {
+                console.error('Realtime location error:', error);
+            }
+        },
+        (error) => {
+            console.error('GPS error:', error);
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 5000,
+            timeout: 10000
+        }
+    );
+}
+
+startRealtimeLocation();
+    
+ loadFriendRequests();
 </script>
 
 </body>
